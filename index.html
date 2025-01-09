@@ -1,103 +1,133 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl"> 
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صفحه وب جذاب</title>
+    <title>بازی مار</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        header {
-            background: #50b3a2;
-            color: white;
-            padding: 20px 0;
-            text-align: center;
-        }
-        header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
-        nav {
             display: flex;
             justify-content: center;
-            background: #333;
-        }
-        nav a {
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
             color: white;
-            padding: 14px 20px;
-            text-decoration: none;
-            text-align: center;
+            flex-direction: column;
         }
-        nav a:hover {
-            background: #575757;
+        canvas {
+            border: 2px solid #50b3a2;
+            background-color: #222;
         }
-        .container {
-            padding: 20px;
-        }
-        .section {
+        h1 {
             margin-bottom: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .section h2 {
-            margin-top: 0;
-        }
-        footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
+        .score {
+            margin-top: 20px;
+            font-size: 1.5em;
         }
     </style>
 </head>
 <body>
+    <h1>بازی مار</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="score">امتیاز: <span id="score">0</span></div>
 
-    <header>
-        <h1>به صفحه وب من خوش آمدید</h1>
-    </header>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-    <nav>
-        <a href="#home">خانه</a>
-        <a href="#about">درباره ما</a>
-        <a href="#services">خدمات</a>
-        <a href="#contact">تماس با ما</a>
-    </nav>
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
 
-    <div class="container">
-        <section id="home" class="section">
-            <h2>خانه</h2>
-            <p>این بخش خانه است. شما می‌توانید اطلاعات کلی درباره سایت خود را اینجا قرار دهید.</p>
-        </section>
+        let snake = [{ x: 10, y: 10 }];
+        let direction = { x: 0, y: 0 };
+        let food = { x: 5, y: 5 };
+        let score = 0;
 
-        <section id="about" class="section">
-            <h2>درباره ما</h2>
-            <p>در این بخش می‌توانید درباره تیم و اهداف خود بنویسید.</p>
-        </section>
+        function gameLoop() {
+            update();
+            draw();
+            setTimeout(gameLoop, 100);
+        }
 
-        <section id="services" class="section">
-            <h2>خدمات</h2>
-            <p>خدماتی که ارائه می‌دهید را در این بخش توضیح دهید.</p>
-        </section>
+        function update() {
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-        <section id="contact" class="section">
-            <h2>تماس با ما</h2>
-            <p>اطلاعات تماس خود را در این بخش قرار دهید.</p>
-        </section>
-    </div>
+            // برخورد با دیوارها
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                resetGame();
+                return;
+            }
 
-    <footer>
-        <p>تمامی حقوق محفوظ است &copy; 2023</p>
-    </footer>
+            // برخورد با خود مار
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                resetGame();
+                return;
+            }
 
+            snake.unshift(head);
+
+            // خوردن غذا
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                document.getElementById("score").textContent = score;
+                placeFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // رسم مار
+            ctx.fillStyle = "#50b3a2";
+            snake.forEach(segment => ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize));
+
+            // رسم غذا
+            ctx.fillStyle = "#ff4757";
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        }
+
+        function placeFood() {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+
+            // اگر غذا روی مار قرار گرفت، جای آن را تغییر بده
+            if (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
+                placeFood();
+            }
+        }
+
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            direction = { x: 0, y: 0 };
+            score = 0;
+            document.getElementById("score").textContent = score;
+            placeFood();
+        }
+
+        window.addEventListener("keydown", e => {
+            switch (e.key) {
+                case "ArrowUp":
+                    if (direction.y === 0) direction = { x: 0, y: -1 };
+                    break;
+                case "ArrowDown":
+                    if (direction.y === 0) direction = { x: 0, y: 1 };
+                    break;
+                case "ArrowLeft":
+                    if (direction.x === 0) direction = { x: -1, y: 0 };
+                    break;
+                case "ArrowRight":
+                    if (direction.x === 0) direction = { x: 1, y: 0 };
+                    break;
+            }
+        });
+
+        placeFood();
+        gameLoop();
+    </script>
 </body>
 </html>
